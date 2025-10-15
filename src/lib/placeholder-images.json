@@ -3,19 +3,19 @@
     {
       "id": "dpr-image-1",
       "description": "A construction site plan showing project layout and phasing.",
-      "imageUrl": "https://picsum.photos/seed/dpr1/800/600",
+      "imageUrl": "/DPR1.webp",
       "imageHint": "construction site"
     },
     {
       "id": "dpr-image-2",
       "description": "Architectural rendering of the proposed building facade.",
-      "imageUrl": "https://picsum.photos/seed/dpr2/800/600",
+      "imageUrl": "/DPR2.webp",
       "imageHint": "architectural drawing"
     },
     {
       "id": "dpr-image-3",
       "description": "Financial projection chart from the project report.",
-      "imageUrl": "https://picsum.photos/seed/dpr3/800/600",
+      "imageUrl": "/DPR3.webp",
       "imageHint": "financial chart"
     }
   ]

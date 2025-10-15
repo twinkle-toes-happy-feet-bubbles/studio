@@ -2,27 +2,37 @@
 
 import { analyzeDPRImage, type AnalyzeDPRImageInput } from "@/ai/flows/analyze-dpr-image";
 import { z } from "zod";
+import { promises as fs } from 'fs';
+import path from 'path';
 
 const ActionInputSchema = z.object({
-  imageUrl: z.string().url(),
+  imageUrl: z.string(),
   evaluationCriteria: z.string().min(10, "Evaluation criteria must be at least 10 characters long."),
 });
 
 async function imageUrlToDataUri(url: string): Promise<string> {
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.statusText}`);
+    const imagePath = path.join(process.cwd(), 'public', url);
+    const imageBuffer = await fs.readFile(imagePath);
+    const base64 = imageBuffer.toString('base64');
+    
+    const ext = path.extname(url).toLowerCase();
+    let contentType;
+    switch (ext) {
+        case '.webp':
+            contentType = 'image/webp';
+            break;
+        case '.jpg':
+        case '.jpeg':
+            contentType = 'image/jpeg';
+            break;
+        case '.png':
+            contentType = 'image/png';
+            break;
+        default:
+            contentType = 'application/octet-stream';
     }
 
-    const contentType = response.headers.get('content-type');
-    if (!contentType) {
-      throw new Error("Could not determine image content type.");
-    }
-    
-    const buffer = Buffer.from(await response.arrayBuffer());
-    const base64 = buffer.toString('base64');
-    
     return `data:${contentType};base64,${base64}`;
   } catch (error) {
     console.error("Error converting image URL to data URI:", error);

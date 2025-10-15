@@ -10,20 +10,21 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {defineFlow} from 'genkit/flow';
 
-const AnalyzeDPRImageInputSchema = z.object({
-  imageDataUri: z
-    .string()
-    .describe(
-      'A DPR image, as a data URI that must include a MIME type and use Base64 encoding. Expected format: \'data:<mimetype>;base64,<encoded_data>\'.' // Ensure correct MIME type and Base64 encoding
-    ),
-  evaluationCriteria: z
-    .string()
-    .describe('User-provided criteria or instructions for evaluating the DPR image.'), // Clear description of the input's purpose
+/**
+ * The input for the DPR image analysis flow.
+ */
+export const AnalyzeDPRImageInputSchema = z.object({
+  imageDataUri: z.string().describe('The data URI of the image to analyze.'), // Added for clarity and type safety
+  evaluationCriteria: z.string().describe('The user-provided criteria for evaluating the DPR image.'),
 });
 export type AnalyzeDPRImageInput = z.infer<typeof AnalyzeDPRImageInputSchema>;
 
-const AnalyzeDPRImageOutputSchema = z.object({
+/**
+ * The output for the DPR image analysis flow.
+ */
+export const AnalyzeDPRImageOutputSchema = z.object({
   deliberationTrace: z
     .string()
     .describe('A detailed trace of the AI deliberation process, including all council member contributions.'), // Comprehensive trace description
@@ -34,7 +35,7 @@ const AnalyzeDPRImageOutputSchema = z.object({
     .string()
     .describe('The assessed risk level, categorized as RED, AMBER, or GREEN.'), // Specific risk levels
   confidenceScore: z
-    .number()
+    .number().min(0).max(100)
     .describe('A numerical score indicating the AI\'s confidence in its analysis and verdict.'), // Confidence score
   governanceAction: z
     .string()
@@ -42,70 +43,52 @@ const AnalyzeDPRImageOutputSchema = z.object({
 });
 export type AnalyzeDPRImageOutput = z.infer<typeof AnalyzeDPRImageOutputSchema>;
 
-
-const askUser = ai.defineTool({
-  name: 'ask_user',
-  description: 'Incorporate the user\'s input into the final deliberation.',
-  inputSchema: z.object({
-    user_input: z.string().describe('The user\'s evaluation criteria.'),
-  }),
-  outputSchema: z.string(),
-},
-async (input) => {
-  // This tool simply returns the user input for incorporation into the prompt.
-  return input.user_input;
-});
-
-
-export async function analyzeDPRImage(input: AnalyzeDPRImageInput): Promise<AnalyzeDPRImageOutput> {
-  return analyzeDPRImageFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'analyzeDPRImagePrompt',
-  input: {schema: AnalyzeDPRImageInputSchema},
-  output: {schema: AnalyzeDPRImageOutputSchema},
-  tools: [askUser],
-  prompt: `You are a council deliberating on a Detailed Project Report (DPR) image.
-
-Your goal is to analyze the image based on user-provided evaluation criteria, mimicking a council\'s deliberation process.
-
-You will act as four distinct council members:
-
-Creator: Provides the initial project details and background.
-Critic: Critically evaluates the project, identifying potential risks and weaknesses.
-Worker: Proposes solutions and improvements to address the identified risks.
-Justice: Synthesizes the council\'s input, delivering a final verdict and recommended governance action.
-
-Incorporate the user\'s evaluation criteria using the ask_user tool.
-
-Analyze the following DPR image: {{media url=imageDataUri}}
-
-Evaluation Criteria (provided by the user): {{ask_user user_input=evaluationCriteria}}
-
-
-Structure your response as follows:
-
-Deliberation Trace: A detailed log of each council member\'s contribution.
-Council Verdict: The final verdict or recommendation.
-Risk Band: The assessed risk level (RED, AMBER, or GREEN).
-Confidence Score: A numerical score (0-100) indicating the AI\'s confidence in its analysis.
-Governance Action: Recommended governance action.
-
-Ensure that the deliberation trace includes specific points raised by each council member (Creator, Critic, Worker, Justice), the council verdict summarizes the discussion and arrives at a decision, the risk band categorizes the overall project risk (RED, AMBER, GREEN) based on the deliberations, the confidence score reflects how certain the council is in its assessment, and the governance action outlines specific steps to be taken as a result of the analysis.
-
-Your output MUST conform to the AnalyzeDPRImageOutputSchema. The \"deliberationTrace\", \"councilVerdict\", and \"governanceAction\" fields MUST be strings. The \"riskBand\" field MUST be one of \"RED\", \"AMBER\", or \"GREEN\". The \"confidenceScore\" field MUST be a number between 0 and 100.
-`,
-});
-
-const analyzeDPRImageFlow = ai.defineFlow(
+/**
+ * A Genkit flow that analyzes a DPR image based on user-defined criteria.
+ */
+export const analyzeDPRImage = defineFlow(
   {
-    name: 'analyzeDPRImageFlow',
+    name: 'analyzeDPRImage',
     inputSchema: AnalyzeDPRImageInputSchema,
     outputSchema: AnalyzeDPRImageOutputSchema,
+    authPolicy: (auth, input) => {
+      // This is a placeholder for your own authentication logic.
+      // For this example, we'll allow all requests.
+      return;
+    },
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
+  async ({imageDataUri, evaluationCriteria}) => {
+    const llmResponse = await ai.generate({
+      model: 'googleai/gemini-1.5-flash',
+      prompt: `
+      You are an expert council of AI agents, each with a specific role, tasked with analyzing a Detailed Project Report (DPR) image.
+      Your goal is to provide a comprehensive analysis based on the provided image and user-defined evaluation criteria.
+
+      The council members are:
+      - **Creator**: Focuses on the positive aspects, potential, and opportunities.
+      - **Critic**: Identifies risks, flaws, and potential downsides.
+      - **Worker**: Provides a neutral, data-driven perspective based on the facts presented in the image.
+      - **Justice**: Ensures fairness, ethical considerations, and a balanced final judgment.
+
+      **Your Task:**
+      1.  Analyze the attached DPR image (\`imageDataUri\`).
+      2.  Consider the user's evaluation criteria: "${evaluationCriteria}".
+      3.  Conduct a simulated deliberation where each council member provides their input.
+      4.  Based on the deliberation, provide a final verdict, assess the risk, and recommend a governance action.
+
+      **Output Format:**
+      Your final output must be a single JSON object that conforms to the 'AnalyzeDPRImageOutputSchema'.
+      Ensure that the deliberation trace includes specific points raised by each council member (Creator, Critic, Worker, Justice), the council verdict summarizes the discussion and arrives at a decision, the risk band categorizes the overall project risk (RED, AMBER, GREEN) based on the deliberations, the confidence score reflects how certain the council is in its assessment, and the governance action outlines specific steps to be taken as a result of the analysis.
+      
+      Your output MUST conform to the AnalyzeDPRImageOutputSchema. The "deliberationTrace", "councilVerdict", and "governanceAction" fields MUST be strings. The "riskBand" field MUST be one of "RED", "AMBER", or "GREEN". The "confidenceScore" field MUST be a number between 0 and 100.
+      `,
+      output: {format: 'json', schema: AnalyzeDPRImageOutputSchema},
+      context: {
+        // You can add any additional context here, such as user information, session IDs, etc.
+      },
+      // Attach the image for analysis
+      media: [{uri: imageDataUri}],
+    });
+    return llmResponse.output();
+  },
 );
