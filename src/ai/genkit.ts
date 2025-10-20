@@ -1,11 +1,11 @@
-import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/google-genai';
+import OpenAI from "openai";
 
-export const ai = genkit({
-  plugins: [googleAI()],
-  model: 'googleai/gemini-1.5-flash',
-  logConfig: {
-    logLevel: 'debug',
-    showJSON: true,
-  },
+const DEFAULT_BASE_URL = process.env.NVIDIA_BASE_URL ?? "https://integrate.api.nvidia.com/v1";
+
+export const DEFAULT_NVIDIA_MODEL =
+  process.env.NVIDIA_MODEL ?? "deepseek-ai/deepseek-v3.1-terminus";
+
+export const nvidiaClient = new OpenAI({
+  apiKey: process.env.NVIDIA_API_KEY,
+  baseURL: DEFAULT_BASE_URL,
 });

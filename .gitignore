@@ -16,6 +16,8 @@
 # next.js
 /.next/
 /out/
+.open-next/
+.cf-pages/
 
 # production
 /build

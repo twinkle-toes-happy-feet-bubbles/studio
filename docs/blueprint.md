@@ -3,8 +3,8 @@
 ## Core Features:
 
 - DPR Image Selection: Allow the user to select one of three provided DPR (Detailed Project Report) images for analysis.
-- Evaluation Prompt Input: Provide a text input field for the user to enter evaluation criteria or instructions for Gemini.
-- Gemini-Powered DPR Analysis: Utilize the Gemini AI model to analyze the selected DPR image based on the user's prompt, mimicking the council's deliberation process (Creator, Critic, Worker, Justice). The AI will use web search and code interpreter tools as appropriate to come to a final recommendation.  The 'ask_user' tool must incorporate the user's input into the final deliberation.
+- Evaluation Prompt Input: Provide a text input field for the user to enter evaluation criteria or instructions for the NVIDIA-hosted model.
+- NVIDIA-Powered DPR Analysis: Utilize an NVIDIA foundation model to analyze the selected DPR image based on the user's prompt, mimicking the council's deliberation process (Creator, Critic, Worker, Justice). The AI will use web search and code interpreter tools as appropriate to come to a final recommendation.  The 'ask_user' tool must incorporate the user's input into the final deliberation.
 - Risk Prediction: The application would distill its analysis to come up with a risk band using the same 'RED', 'AMBER', 'GREEN' codes as shown in the example.
 - Result Display: Display the analysis results, including the deliberation trace, council verdict, risk band, confidence score, and governance action.
 

@@ -4,13 +4,22 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { RiskAmberIcon, RiskGreenIcon, RiskRedIcon } from "./icons";
 import type { AnalysisResult } from "@/lib/types";
+import type { LucideIcon } from "lucide-react";
 
 type RiskIndicatorProps = {
   riskBand: AnalysisResult['riskBand'];
   confidenceScore: AnalysisResult['confidenceScore'];
 };
 
-const riskConfig = {
+type RiskBandConfig = {
+  label: string;
+  Icon: LucideIcon;
+  badgeClass: string;
+  progressClass: string;
+  iconClass: string;
+};
+
+const riskConfig: Record<AnalysisResult['riskBand'], RiskBandConfig> = {
   GREEN: {
     label: "Low Risk",
     Icon: RiskGreenIcon,

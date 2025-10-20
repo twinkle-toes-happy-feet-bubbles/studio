@@ -6,88 +6,82 @@ import { cn } from "@/lib/utils";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Loader2, Send } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 
 type AnalysisFormProps = {
-  onSubmit: (data: { imageId: string; prompt: string }) => void;
+  onSubmit: (data: { reportId: string; prompt: string }) => void;
   isLoading: boolean;
 };
 
+const DEFAULT_PROMPT = "Assess and analyse this document.";
+
 export default function AnalysisForm({ onSubmit, isLoading }: AnalysisFormProps) {
-  const [selectedImageId, setSelectedImageId] = useState<string | null>(PlaceHolderImages[0]?.id || null);
-  const [prompt, setPrompt] = useState<string>("");
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(PlaceHolderImages[0]?.id || null);
   const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedImageId) {
+    if (!selectedReportId) {
       toast({
         variant: "destructive",
-        title: "No Image Selected",
-        description: "Please select a DPR image to analyze.",
+        title: "No DPR Selected",
+        description: "Please select a DPR summary to analyze.",
       });
       return;
     }
-    if (!prompt.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Missing Criteria",
-        description: "Please provide evaluation criteria for the analysis.",
-      });
-      return;
-    }
-    onSubmit({ imageId: selectedImageId, prompt });
+    onSubmit({ reportId: selectedReportId, prompt: DEFAULT_PROMPT });
   };
 
   return (
     <Card className="shadow-lg">
       <CardHeader>
         <CardTitle className="font-headline text-2xl">Analysis Input</CardTitle>
-        <CardDescription>Select an image and provide instructions for the AI council.</CardDescription>
+        <CardDescription>Select a DPR reference and provide evaluation criteria for the council.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label className="text-base font-medium">1. Select DPR Image</Label>
+            <Label className="text-base font-medium">1. Select DPR Reference</Label>
             <div className="grid grid-cols-3 gap-3">
-              {PlaceHolderImages.map((image) => (
+              {PlaceHolderImages.map((option) => (
                 <button
                   type="button"
-                  key={image.id}
-                  onClick={() => setSelectedImageId(image.id)}
+                  key={option.id}
+                  onClick={() => setSelectedReportId(option.id)}
                   className={cn(
                     "rounded-lg overflow-hidden border-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                    selectedImageId === image.id ? "border-primary shadow-md" : "border-transparent hover:border-primary/50"
+                    selectedReportId === option.id ? "border-primary shadow-md" : "border-transparent hover:border-primary/50"
                   )}
-                  aria-pressed={selectedImageId === image.id}
+                  aria-pressed={selectedReportId === option.id}
                 >
                   <Image
-                    src={image.imageUrl}
-                    alt={image.description}
+                    src={option.imageUrl}
+                    alt={option.description}
                     width={200}
                     height={150}
                     className="aspect-[4/3] object-cover w-full"
-                    data-ai-hint={image.imageHint}
+                    data-ai-hint={option.imageHint}
                   />
+                  <div className="p-3 text-left bg-background">
+                    <p className="text-sm font-semibold leading-snug text-foreground/90">
+                      {option.title ?? option.description}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-3">
+                      {option.description}
+                    </p>
+                  </div>
                 </button>
               ))}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="evaluation-prompt" className="text-base font-medium">2. Enter Evaluation Criteria</Label>
-            <Textarea
-              id="evaluation-prompt"
-              placeholder="e.g., 'Assess the structural integrity and cost-effectiveness of the proposed design...'"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              className="min-h-[120px] text-base"
-              rows={5}
-            />
+            <Label className="text-base font-medium">2. Evaluation Criteria</Label>
+            <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
+              {DEFAULT_PROMPT}
+            </div>
           </div>
 
           <div>

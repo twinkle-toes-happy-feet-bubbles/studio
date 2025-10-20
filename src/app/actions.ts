@@ -2,43 +2,12 @@
 
 import { analyzeDPRImage, type AnalyzeDPRImageInput } from "@/ai/flows/analyze-dpr-image";
 import { z } from "zod";
-import { promises as fs } from 'fs';
-import path from 'path';
+import { PlaceHolderImages } from "@/lib/placeholder-images";
 
 const ActionInputSchema = z.object({
-  imageUrl: z.string(),
+  reportId: z.string(),
   evaluationCriteria: z.string().min(10, "Evaluation criteria must be at least 10 characters long."),
 });
-
-async function imageUrlToDataUri(url: string): Promise<string> {
-  try {
-    const imagePath = path.join(process.cwd(), 'public', url);
-    const imageBuffer = await fs.readFile(imagePath);
-    const base64 = imageBuffer.toString('base64');
-    
-    const ext = path.extname(url).toLowerCase();
-    let contentType;
-    switch (ext) {
-        case '.webp':
-            contentType = 'image/webp';
-            break;
-        case '.jpg':
-        case '.jpeg':
-            contentType = 'image/jpeg';
-            break;
-        case '.png':
-            contentType = 'image/png';
-            break;
-        default:
-            contentType = 'application/octet-stream';
-    }
-
-    return `data:${contentType};base64,${base64}`;
-  } catch (error) {
-    console.error("Error converting image URL to data URI:", error);
-    throw new Error("Failed to process image from URL.");
-  }
-}
 
 export async function performAnalysis(input: z.infer<typeof ActionInputSchema>) {
   const validatedInput = ActionInputSchema.safeParse(input);
@@ -46,12 +15,23 @@ export async function performAnalysis(input: z.infer<typeof ActionInputSchema>) 
     throw new Error(validatedInput.error.errors.map(e => e.message).join(', '));
   }
 
-  const { imageUrl, evaluationCriteria } = validatedInput.data;
+  const apiKey = process.env.NVIDIA_API_KEY;
+  if (!apiKey) {
+    console.error('NVIDIA API key missing. Set NVIDIA_API_KEY in your environment.');
+    throw new Error(
+      "Missing NVIDIA API key. Define NVIDIA_API_KEY in a .env.local file, then restart the dev server.",
+    );
+  }
 
-  const imageDataUri = await imageUrlToDataUri(imageUrl);
+  const { reportId, evaluationCriteria } = validatedInput.data;
+
+  const selectedReport = PlaceHolderImages.find(report => report.id === reportId);
+  if (!selectedReport) {
+    throw new Error("Selected DPR reference was not found.");
+  }
 
   const analysisInput: AnalyzeDPRImageInput = {
-    imageDataUri,
+    reportText: selectedReport.reportText,
     evaluationCriteria,
   };
 
@@ -60,6 +40,20 @@ export async function performAnalysis(input: z.infer<typeof ActionInputSchema>) 
     return result;
   } catch (error) {
     console.error("AI analysis failed:", error);
+
+    const message = error instanceof Error ? error.message : String(error);
+    if (/Invalid API key|Unauthorized/i.test(message)) {
+      throw new Error(
+        "NVIDIA rejected the API key. Make sure NVIDIA_API_KEY matches the exact key from the NVIDIA AI Foundation Models console and that the requested model is enabled for your organization.",
+      );
+    }
+
+    if (/quota|permission|access denied/i.test(message)) {
+      throw new Error(
+        "The NVIDIA API reported a permission or quota issue. Confirm your org has access to the selected model and sufficient credit limits in the NVIDIA API console.",
+      );
+    }
+
     throw new Error("The AI analysis failed to produce a result. Please try again.");
   }
 }
