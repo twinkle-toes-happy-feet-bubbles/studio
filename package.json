@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "cf-build": "open-next build --adapter cloudflare",
     "cf:prepare": "npm run cf-build",
-    "cf-deploy": "npm run cf-build && wrangler pages deploy .open-next --project-name dpr-insight",
+  "cf-deploy": "node scripts/cf-deploy.mjs",
     "cf:deploy": "npm run cf-deploy"
   },
   "dependencies": {

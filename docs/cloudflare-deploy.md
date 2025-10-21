@@ -18,6 +18,7 @@ In Cloudflare Pages, open **Settings → Environment Variables** for your projec
 | `NVIDIA_API_KEY` | ✅ | Paste the same key you use locally. |
 | `OPENAI_API_KEY` | ✅ | Required during the OpenNext build step for the NVIDIA SDK shim. |
 | `CLOUDFLARE_API_TOKEN` | ✅ | Needed when the build command runs `wrangler pages deploy` inside Cloudflare’s builder. Grant **Cloudflare Pages:Edit** and **Workers Scripts:Read** at the account scope. |
+| `CF_PAGES_PROJECT_NAME` | ✅ | The slug of your Cloudflare Pages project (e.g. `dpr-insight`). Update this if your project uses a different name. |
 | `TAVILY_API_KEY` | Optional | Needed only if you turned on Tavily search. |
 
 > 💡 If you connect via Git, you can set these before the first build. When using the CLI deploy flow you can pass them with `--env` or set them in the dashboard afterwards.
@@ -42,16 +43,22 @@ This is the easiest long-term setup: every push to `main` (and pull requests) wi
 
 Because the build command calls `wrangler pages deploy`, the Pages builder must have an API token with the right scopes. Create one from **Profile → API Tokens → Create** using the *Edit Cloudflare Pages* template (or manually grant **Account.Cloudflare Pages → Edit** plus **Account.Workers Scripts → Read**). Add the token value to the project’s environment variables as `CLOUDFLARE_API_TOKEN` for both Production and Preview environments.
 
+### Pick the correct project slug
+
+Set `CF_PAGES_PROJECT_NAME` to the slug of the Pages project you want to deploy. You can find it on the project **Overview** page (it matches the subdomain shown on `*.pages.dev`) or via `npx wrangler pages project list`. Either create a project named `dpr-insight` or update the slug in this variable so Wrangler deploys to the right destination.
+
 ## 4. Option B – Manual Deploy with Wrangler
 
 If you prefer manual deploys or want to test before pushing to Git:
 
 ```bash
 npm install
-npm run cf-deploy -- --project-name dpr-insight
+npm run cf-deploy
+# optionally override on the fly:
+npm run cf-deploy -- --project-name your-project-slug
 ```
 
-- `npm run cf-deploy` runs the OpenNext build and uploads the bundle to Pages; pass `--project-name` the first time (or hardcode it in the script). `npm run cf:deploy` remains as a local alias if you prefer the colon style.
+- `npm run cf-deploy` runs the OpenNext build and uploads the bundle to Pages; export `CF_PAGES_PROJECT_NAME` (or pass `--project-name`) so it targets the correct project. `npm run cf:deploy` remains as a local alias if you prefer the colon style.
 - The command expects `CLOUDFLARE_API_TOKEN` to be present in your shell. When running locally you can export it or use `wrangler login` instead of the token.
 
 ## 5. Custom Domain (Optional)
