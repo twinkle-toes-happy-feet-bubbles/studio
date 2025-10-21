@@ -17,6 +17,7 @@ In Cloudflare Pages, open **Settings → Environment Variables** for your projec
 | --- | --- | --- |
 | `NVIDIA_API_KEY` | ✅ | Paste the same key you use locally. |
 | `OPENAI_API_KEY` | ✅ | Required during the OpenNext build step for the NVIDIA SDK shim. |
+| `CLOUDFLARE_API_TOKEN` | ✅ | Needed when the build command runs `wrangler pages deploy` inside Cloudflare’s builder. Grant **Cloudflare Pages:Edit** and **Workers Scripts:Read** at the account scope. |
 | `TAVILY_API_KEY` | Optional | Needed only if you turned on Tavily search. |
 
 > 💡 If you connect via Git, you can set these before the first build. When using the CLI deploy flow you can pass them with `--env` or set them in the dashboard afterwards.
@@ -37,6 +38,10 @@ This is the easiest long-term setup: every push to `main` (and pull requests) wi
 
 > `npm run cf-deploy` invokes `open-next build` under the hood. If you need to inspect the bundle separately, run `npm run cf-build` locally to populate `.open-next`.
 
+### Required Cloudflare API token
+
+Because the build command calls `wrangler pages deploy`, the Pages builder must have an API token with the right scopes. Create one from **Profile → API Tokens → Create** using the *Edit Cloudflare Pages* template (or manually grant **Account.Cloudflare Pages → Edit** plus **Account.Workers Scripts → Read**). Add the token value to the project’s environment variables as `CLOUDFLARE_API_TOKEN` for both Production and Preview environments.
+
 ## 4. Option B – Manual Deploy with Wrangler
 
 If you prefer manual deploys or want to test before pushing to Git:
@@ -47,6 +52,7 @@ npm run cf-deploy -- --project-name dpr-insight
 ```
 
 - `npm run cf-deploy` runs the OpenNext build and uploads the bundle to Pages; pass `--project-name` the first time (or hardcode it in the script). `npm run cf:deploy` remains as a local alias if you prefer the colon style.
+- The command expects `CLOUDFLARE_API_TOKEN` to be present in your shell. When running locally you can export it or use `wrangler login` instead of the token.
 
 ## 5. Custom Domain (Optional)
 
