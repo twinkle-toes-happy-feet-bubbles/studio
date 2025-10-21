@@ -1,23 +1,44 @@
 import { spawnSync } from "node:child_process";
 
-const extraArgs = [];
+const wranglerArgs = [];
 let cliProjectName;
+let cliBranch;
+
+const projectNameTokens = ["--project-name", "--project", "-p"];
+const branchTokens = ["--branch", "-b"];
 
 for (let i = 2; i < process.argv.length; i += 1) {
   const token = process.argv[i];
 
-  if (token === "--project-name" && i + 1 < process.argv.length) {
+  if (projectNameTokens.includes(token) && i + 1 < process.argv.length) {
     cliProjectName = process.argv[i + 1];
     i += 1;
     continue;
   }
 
-  if (token.startsWith("--project-name=")) {
+  if (token.startsWith("--project-name=") || token.startsWith("--project=") || token.startsWith("-p=")) {
     cliProjectName = token.split("=")[1];
     continue;
   }
 
-  extraArgs.push(token);
+  if (branchTokens.includes(token) && i + 1 < process.argv.length) {
+    cliBranch = process.argv[i + 1];
+    i += 1;
+    continue;
+  }
+
+  if (token.startsWith("--branch=") || token.startsWith("-b=")) {
+    cliBranch = token.split("=")[1];
+    continue;
+  }
+
+  if (!token.startsWith("-")) {
+    // support `npm run cf-deploy -- my-project`
+    cliProjectName = token;
+    continue;
+  }
+
+  wranglerArgs.push(token);
 }
 
 const projectName =
@@ -26,6 +47,8 @@ const projectName =
   process.env.CLOUDFLARE_PAGES_PROJECT_NAME ??
   process.env.CLOUDFLARE_PAGES_PROJECT ??
   "dpr-insight";
+
+const branchName = cliBranch ?? process.env.CF_PAGES_PRODUCTION_BRANCH ?? "main";
 
 const run = (command, args, options = {}) => {
   const result = spawnSync(command, args, {
@@ -40,63 +63,53 @@ const run = (command, args, options = {}) => {
   }
 };
 
-const runWithOutput = (command, args) =>
-  spawnSync(command, args, {
-    stdio: ["ignore", "pipe", "inherit"],
-    env: process.env,
-    shell: process.platform === "win32",
-    encoding: "utf-8",
-  });
-
 console.log(`\n[cf-deploy] Using Cloudflare Pages project: ${projectName}`);
 
-let projectExists = false;
-
-try {
-  const listResult = runWithOutput("npx", [
+console.log(`\n[cf-deploy] Ensuring Cloudflare Pages project '${projectName}' exists...`);
+const createResult = spawnSync(
+  "npx",
+  [
     "wrangler",
     "pages",
     "project",
-    "list",
-    "--json",
-  ]);
+    "create",
+    projectName,
+    "--production-branch",
+    process.env.CF_PAGES_PRODUCTION_BRANCH ?? "main",
+  ],
+  {
+    stdio: ["ignore", "pipe", "pipe"],
+    env: process.env,
+    shell: process.platform === "win32",
+    encoding: "utf-8",
+  },
+);
 
-  if (listResult.status === 0 && listResult.stdout) {
-    const projects = JSON.parse(listResult.stdout);
-    projectExists = Array.isArray(projects)
-      ? projects.some((proj) => proj.name === projectName || proj.slug === projectName)
-      : false;
-  }
-} catch (error) {
-  console.warn("[cf-deploy] Unable to list Pages projects:", error.message ?? error);
-}
-
-if (!projectExists) {
-  console.log(`\n[cf-deploy] Project '${projectName}' not found. Creating it...`);
-  const createResult = spawnSync(
-    "npx",
-    [
-      "wrangler",
-      "pages",
-      "project",
-      "create",
-      projectName,
-      "--production-branch",
-      process.env.CF_PAGES_PRODUCTION_BRANCH ?? "main",
-    ],
-    {
-      stdio: "inherit",
-      env: process.env,
-      shell: process.platform === "win32",
-    },
-  );
-
-  if (createResult.status !== 0) {
-    console.warn(
-      "[cf-deploy] Continuing even though project creation failed. If the project truly does not exist, the deploy step will error with code 8000007.",
-    );
+if (createResult.status === 0) {
+  console.log(createResult.stdout.trim() || `[cf-deploy] Created project '${projectName}'.`);
+} else {
+  const output = `${createResult.stdout ?? ""}${createResult.stderr ?? ""}`;
+  if (output.includes("already exists")) {
+    console.log(`[cf-deploy] Project '${projectName}' already exists.`);
+  } else if (output.trim().length > 0) {
+    console.warn(`[cf-deploy] Project create output:\n${output.trim()}`);
   }
 }
 
 run("npm", ["run", "cf-build"]);
-run("npx", ["wrangler", "pages", "deploy", ".open-next", "--project-name", projectName, ...extraArgs]);
+
+console.log(`\n[cf-deploy] Deploying to production branch: ${branchName}`);
+
+const deployArgs = [
+  "wrangler",
+  "pages",
+  "deploy",
+  ".open-next",
+  "--project-name",
+  projectName,
+  "--branch",
+  branchName,
+  ...wranglerArgs,
+];
+
+run("npx", deployArgs);

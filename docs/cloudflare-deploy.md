@@ -16,7 +16,6 @@ In Cloudflare Pages, open **Settings → Environment Variables** for your projec
 | Variable | Required | Notes |
 | --- | --- | --- |
 | `NVIDIA_API_KEY` | ✅ | Paste the same key you use locally. |
-| `OPENAI_API_KEY` | ✅ | Required during the OpenNext build step for the NVIDIA SDK shim. |
 | `CLOUDFLARE_API_TOKEN` | ✅ | Needed when the build command runs `wrangler pages deploy` inside Cloudflare’s builder. Grant **Cloudflare Pages:Edit** and **Workers Scripts:Read** at the account scope. |
 | `CF_PAGES_PROJECT_NAME` | ✅ | The slug of your Cloudflare Pages project (e.g. `dpr-insight`). Update this if your project uses a different name. |
 | `CF_PAGES_PRODUCTION_BRANCH` | Optional | Defaults to `main`. Override if your production branch has a different name. |
@@ -43,6 +42,8 @@ This is the easiest long-term setup: every push to `main` (and pull requests) wi
 ### Required Cloudflare API token
 
 Because the build command calls `wrangler pages deploy`, the Pages builder must have an API token with the right scopes. Create one from **Profile → API Tokens → Create** using the *Edit Cloudflare Pages* template (or manually grant **Account.Cloudflare Pages → Edit** plus **Account.Workers Scripts → Read**). Add the token value to the project’s environment variables as `CLOUDFLARE_API_TOKEN` for both Production and Preview environments.
+
+> Note: the app only uses NVIDIA’s endpoint via the OpenAI SDK, so you do **not** need an `OPENAI_API_KEY` unless you decide to call OpenAI directly in the future.
 
 ### Pick the correct project slug
 
