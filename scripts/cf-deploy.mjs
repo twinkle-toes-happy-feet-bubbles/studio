@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 const wranglerArgs = [];
 let cliProjectName;
 let cliBranch;
+const positionalArgs = [];
 
 const projectNameTokens = ["--project-name", "--project", "-p"];
 const branchTokens = ["--branch", "-b"];
@@ -33,12 +34,20 @@ for (let i = 2; i < process.argv.length; i += 1) {
   }
 
   if (!token.startsWith("-")) {
-    // support `npm run cf-deploy -- my-project`
-    cliProjectName = token;
+    // Collect positional arguments: first is project, second is branch
+    positionalArgs.push(token);
     continue;
   }
 
   wranglerArgs.push(token);
+}
+
+// Handle positional arguments: cf-deploy <project> <branch>
+if (positionalArgs.length > 0 && !cliProjectName) {
+  cliProjectName = positionalArgs[0];
+}
+if (positionalArgs.length > 1 && !cliBranch) {
+  cliBranch = positionalArgs[1];
 }
 
 const projectName =
