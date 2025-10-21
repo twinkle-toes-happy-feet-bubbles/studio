@@ -96,7 +96,8 @@ if (createResult.status === 0) {
   }
 }
 
-run("npm", ["run", "cf-build"]);
+// Build is now done separately in CI with proper env vars, so we skip it here
+// run("npm", ["run", "cf-build"]);
 
 console.log(`\n[cf-deploy] Deploying to production branch: ${branchName}`);
 
