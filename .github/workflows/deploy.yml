@@ -34,25 +34,9 @@ jobs:
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
 
-      - name: List OpenNext output structure
-        run: |
-          echo "=== Contents of .open-next ==="
-          ls -la .open-next/
-          echo "=== Full directory tree ==="
-          find .open-next -type f -o -type d
-      
-      - name: Check for _worker.js
-        run: |
-          if [ -f ".open-next/_worker.js" ]; then
-            echo "Found _worker.js in .open-next root"
-            ls -la .open-next/_worker.js
-          else
-            echo "_worker.js not found in root, searching..."
-            find .open-next -name "_worker.js" -o -name "*.worker.js"
-          fi
-      
-      - name: Deploy to Cloudflare Pages with Wrangler
-        run: npx wrangler pages deploy .open-next --project-name=parakh --branch=main
+      - name: Deploy with our custom script (uses Wrangler internally)
+        run: npm run cf-deploy parakh main
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_PAGES_PROJECT_NAME: parakh
+          CF_PAGES_PRODUCTION_BRANCH: main
