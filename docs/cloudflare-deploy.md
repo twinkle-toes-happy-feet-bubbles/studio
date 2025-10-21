@@ -29,13 +29,13 @@ This is the easiest long-term setup: every push to `main` (and pull requests) wi
 2. **Connect Cloudflare Pages** – in the dashboard choose **Create a project → Connect to Git** and pick your repo/branch (`main`).
 3. **Build settings**:
    - Framework preset: **None** (we let OpenNext craft the worker and assets).
-   - Build command: `npm run cf:deploy` (runs the OpenNext build and deploys via Wrangler in one shot).
+   - Build command: `npm run cf-deploy` (runs the OpenNext build and deploys via Wrangler in one shot).
    - Deploy command: leave blank/disabled—the deploy happens inside the build command.
    - Build output directory: leave empty; Wrangler uploads directly from `.open-next`.
 4. **Environment variables** – set `NVIDIA_API_KEY` (and optional `TAVILY_API_KEY`) before the first build so the app can reach NVIDIA during SSR.
 5. **Kick off the build** – hit save. Cloudflare compiles the project and deploys a production site. Every subsequent push repeats the flow; PRs get preview URLs automatically.
 
-> `npm run cf:deploy` invokes `open-next build` under the hood. If you need to inspect the bundle separately, run `npm run cf:prepare` locally to populate `.open-next`.
+> `npm run cf-deploy` invokes `open-next build` under the hood. If you need to inspect the bundle separately, run `npm run cf-build` locally to populate `.open-next`.
 
 ## 4. Option B – Manual Deploy with Wrangler
 
@@ -43,10 +43,10 @@ If you prefer manual deploys or want to test before pushing to Git:
 
 ```bash
 npm install
-npm run cf:deploy -- --project-name dpr-insight
+npm run cf-deploy -- --project-name dpr-insight
 ```
 
-- `npm run cf:deploy` runs the OpenNext build and uploads the bundle to Pages; pass `--project-name` the first time (or hardcode it in the script).
+- `npm run cf-deploy` runs the OpenNext build and uploads the bundle to Pages; pass `--project-name` the first time (or hardcode it in the script). `npm run cf:deploy` remains as a local alias if you prefer the colon style.
 
 ## 5. Custom Domain (Optional)
 
