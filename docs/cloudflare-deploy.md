@@ -16,6 +16,7 @@ In Cloudflare Pages, open **Settings → Environment Variables** for your projec
 | Variable | Required | Notes |
 | --- | --- | --- |
 | `NVIDIA_API_KEY` | ✅ | Paste the same key you use locally. |
+| `OPENAI_API_KEY` | ✅ | Required during the OpenNext build step for the NVIDIA SDK shim. |
 | `TAVILY_API_KEY` | Optional | Needed only if you turned on Tavily search. |
 
 > 💡 If you connect via Git, you can set these before the first build. When using the CLI deploy flow you can pass them with `--env` or set them in the dashboard afterwards.
@@ -27,13 +28,14 @@ This is the easiest long-term setup: every push to `main` (and pull requests) wi
 1. **Push to Git** – commit your work and push to GitHub/GitLab/Bitbucket. Make sure `.open-next/` and other build folders are ignored (already handled in `.gitignore`).
 2. **Connect Cloudflare Pages** – in the dashboard choose **Create a project → Connect to Git** and pick your repo/branch (`main`).
 3. **Build settings**:
-   - Framework preset: **Next.js** (should auto-fill).
-   - Build command: `npm run build` (Cloudflare’s builder handles the rest and generates the worker automatically).
-   - Build output directory: `.vercel/output/static` (autofilled when the preset is set).
+   - Framework preset: **None** (we let OpenNext craft the worker and assets).
+   - Build command: `npm run cf:deploy` (runs the OpenNext build and deploys via Wrangler in one shot).
+   - Deploy command: leave blank/disabled—the deploy happens inside the build command.
+   - Build output directory: leave empty; Wrangler uploads directly from `.open-next`.
 4. **Environment variables** – set `NVIDIA_API_KEY` (and optional `TAVILY_API_KEY`) before the first build so the app can reach NVIDIA during SSR.
 5. **Kick off the build** – hit save. Cloudflare compiles the project and deploys a production site. Every subsequent push repeats the flow; PRs get preview URLs automatically.
 
-> If Cloudflare ever stops auto-detecting Next.js, switch the build command to `npm run cf:prepare` with output `.open-next`. Their Linux builder runs OpenNext successfully and will generate the worker you need.
+> `npm run cf:deploy` invokes `open-next build` under the hood. If you need to inspect the bundle separately, run `npm run cf:prepare` locally to populate `.open-next`.
 
 ## 4. Option B – Manual Deploy with Wrangler
 
@@ -41,12 +43,10 @@ If you prefer manual deploys or want to test before pushing to Git:
 
 ```bash
 npm install
-npm run cf:prepare
 npm run cf:deploy -- --project-name dpr-insight
 ```
 
-- `npm run cf:prepare` builds and bundles the project into `.open-next` via [OpenNext](https://opennext.js.org/cloudflare).
-- `npm run cf:deploy` uploads the bundle to Pages; pass `--project-name` the first time (or hardcode it in the script).
+- `npm run cf:deploy` runs the OpenNext build and uploads the bundle to Pages; pass `--project-name` the first time (or hardcode it in the script).
 
 ## 5. Custom Domain (Optional)
 
