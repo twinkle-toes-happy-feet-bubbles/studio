@@ -65,36 +65,9 @@ const run = (command, args, options = {}) => {
 
 console.log(`\n[cf-deploy] Using Cloudflare Pages project: ${projectName}`);
 
-console.log(`\n[cf-deploy] Ensuring Cloudflare Pages project '${projectName}' exists...`);
-const createResult = spawnSync(
-  "npx",
-  [
-    "wrangler",
-    "pages",
-    "project",
-    "create",
-    projectName,
-    "--production-branch",
-    process.env.CF_PAGES_PRODUCTION_BRANCH ?? "main",
-  ],
-  {
-    stdio: ["ignore", "pipe", "pipe"],
-    env: process.env,
-    shell: process.platform === "win32",
-    encoding: "utf-8",
-  },
-);
-
-if (createResult.status === 0) {
-  console.log(createResult.stdout.trim() || `[cf-deploy] Created project '${projectName}'.`);
-} else {
-  const output = `${createResult.stdout ?? ""}${createResult.stderr ?? ""}`;
-  if (output.includes("already exists")) {
-    console.log(`[cf-deploy] Project '${projectName}' already exists.`);
-  } else if (output.trim().length > 0) {
-    console.warn(`[cf-deploy] Project create output:\n${output.trim()}`);
-  }
-}
+// Skip project creation - it already exists and requires extra API permissions
+// The project 'parakh' was already created manually in Cloudflare dashboard
+console.log(`[cf-deploy] Assuming project '${projectName}' already exists (skipping creation check).`);
 
 // Build is now done separately in CI with proper env vars, so we skip it here
 // run("npm", ["run", "cf-build"]);
